@@ -128,18 +128,17 @@ button{border:0;background:none;color:inherit;font:inherit;cursor:pointer}
 
 /* V6.3: PK房间嵌入每场PK赛卡片下方 */
 .pk-activity-block{margin-bottom:14px}
-.pk-list-card{padding:14px;position:relative;overflow:hidden}
-.pk-list-card:after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,#4D8DFF10,transparent 48%,#FF5B720B);pointer-events:none}
-.pk-list-main{position:relative;z-index:1}
-.pk-list-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.pk-list-info{flex:1;min-width:0}
-.pk-list-title{font-size:16px;font-weight:950;margin-top:8px}
-.pk-list-meta{font-size:10px;color:#9CAACA;margin-top:6px;line-height:1.65}
-.start-game-btn{height:38px;padding:0 13px;border-radius:13px;background:linear-gradient(135deg,#FFD953,#FF8A22);color:#fff;font-size:11px;font-weight:950;white-space:nowrap;box-shadow:0 8px 20px #FF982638;position:relative;z-index:2}
+.pk-list-card{padding:0;position:relative;overflow:hidden;border-radius:24px}
+.pk-list-card:after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,#4D8DFF12,transparent 45%,#FF5B7210);pointer-events:none}
+.pk-list-main{position:relative;z-index:1;padding:16px 14px 15px;text-align:center}
+.pk-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.pk-list-title{font-size:22px;font-weight:1000;letter-spacing:.2px;text-align:center;margin:8px 0 6px;color:#F4F7FF;text-shadow:0 7px 20px #0004}
+.pk-list-meta{font-size:10px;color:#9CAACA;margin-top:6px;line-height:1.65;text-align:center}
+.start-game-btn{height:46px;min-width:178px;padding:0 24px;border-radius:23px;background:linear-gradient(135deg,#FFD953,#FF8A22);color:#fff;font-size:14px;font-weight:1000;white-space:nowrap;box-shadow:0 12px 26px #FF982640;position:relative;z-index:2;margin:17px auto 0;display:inline-flex;align-items:center;justify-content:center}
 .start-game-btn:active{transform:scale(.98)}
-.embedded-rooms{margin-top:12px;padding-top:12px;border-top:1px solid #FFFFFF0E;position:relative;z-index:1}
+.embedded-rooms{position:relative;z-index:1;margin:0;padding:13px 14px 14px;border-top:1px solid #FFFFFF10;background:linear-gradient(180deg,#0F17320A,#0A10263D)}
 .embedded-room-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.embedded-room-head b{font-size:12px}.embedded-room-head span{font-size:9px;color:#8897BA}
+.embedded-room-head b{font-size:13px}.embedded-room-head span{font-size:9px;color:#8897BA}
 .embedded-room-empty{padding:12px;border-radius:13px;background:#FFFFFF05;border:1px dashed #7184B52B;color:#8493B5;font-size:10px;text-align:center}
 .embedded-room{padding:10px;border-radius:14px;background:#FFFFFF06;border:1px solid #FFFFFF0C;margin-top:7px}
 .embedded-room-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -339,6 +338,7 @@ function pkList(){
  showPendingReconnectPrompt()
 }
 function startGameFromList(e){if(e)e.stopPropagation();openEvent()}
+function openInviteFromList(e){if(e)e.stopPropagation();S.selectedInvites=[];trans('invite')}
 function embeddedRoomsHtml(){
  const list=[];
  if(S.ownRoom)list.push(embeddedOwnRoom(S.ownRoom));
@@ -354,11 +354,19 @@ function updatePkQuery(v){S.pkQuery=v;const root=document.getElementById('pkList
 function pkListContent(){
  const match='产品知识组队体验赛'.includes((S.pkQuery||'').trim());
  if(!match||['未开始','已结束'].includes(S.pkTab))return `<div class="empty-state"><div class="empty-icon"></div><b>没有符合条件的PK赛</b><span>试试切换状态看看</span></div>`;
- return `<button class="panel card event" style="width:100%;text-align:left" onclick="openEvent()"><div class="event-head"><span class="tag green">● 进行中</span><span class="tag blue">1v1 已开放</span></div><div class="event-title">产品知识 PK赛</div></button>${pkRoomSection()}`
+ return `<div class="pk-activity-block"><div class="panel pk-list-card">
+  <div class="pk-list-main" onclick="openEvent()">
+   <div class="pk-list-head"><span class="tag green">● 进行中</span><span class="tag blue">1V1 PK</span></div>
+   <div class="pk-list-title">产品知识 PK赛</div>
+   <div class="pk-list-meta">5道题 · 每题15秒 · 答对10分 · 速度额外加分<br>活动剩余 00:26:36</div>
+   <button class="start-game-btn" onclick="openInviteFromList(event)">开始游戏</button>
+  </div>
+  <div class="embedded-rooms">${pkRoomSection()}</div>
+ </div></div>`
 }
 function pkRoomSection(){
  const rooms=(S.invitedRooms||[]).filter(r=>r.owner&&r.id!==S.ownRoom?.id);
- const head=`<div class="room-list-head"><b>PK房间</b><button class="create-room-btn" style="height:30px;padding:0 11px;border-radius:11px;font-size:10px" onclick="trans('invite')">创建房间</button></div>`;
+ const head=`<div class="embedded-room-head"><b>PK房间</b><span>${rooms.length} 个房间</span></div>`;
  return rooms.length?`${head}${rooms.map(roomInviteCard).join('')}`:`${head}<div class="embedded-room-empty">暂无其他学员发起的PK房间</div>`
 }
 function roomInviteCard(r){return `<div class="room-entry"><div class="room-entry-top"><div><div class="room-entry-title">${r.owner} 邀请你PK</div><div class="room-entry-meta">${r.created} · 房主正在等待</div></div></div><div class="room-entry-bottom"><div class="room-mini-duel"><span class="room-mini-avatar">${r.initial}</span><span class="room-mini-vs">VS</span><span class="room-mini-avatar"><img src="${ME}"></span></div><button class="join-now" onclick="tryEnterInvited('${r.id}')">立即加入</button></div></div>`}
