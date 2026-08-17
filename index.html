@@ -236,6 +236,7 @@ const REVIEW_STEPS=[
  ['profile','个人中心'],
  ['pkList','PK赛列表'],
   ['detail','PK赛详情'],
+  ['invite','邀请好友'],
   ['ownWaiting','等待对手'],
  ['ready','房间已锁定'],
  ['countdown','对战倒计时'],
@@ -247,7 +248,7 @@ const REVIEW_STEPS=[
  ['review','答题回顾']
 ];
 function reviewerHtml(){
- return `<div class="review-nav-head"><b>功能评审导航</b><span>仅用于评审切页，不影响正常用户路径</span></div>${REVIEW_STEPS.map((s,i)=>`<button class="review-step ${S.stage===s[0]?'active':''}" onclick="reviewJump('${s[0]}')"><span class="no">${String(i+1).padStart(2,'0')}</span><span>${s[1]}</span></button>`).join('')}<button class="review-step" onclick="reviewReconnect()"><span class="no">${String(REVIEW_STEPS.length+1).padStart(2,'0')}</span><span>掉线重连弹窗</span></button>`;
+ return `<div class="review-nav-head"><b>功能评审导航</b><span>仅用于评审切页，不影响正常用户路径</span></div>${REVIEW_STEPS.map((s,i)=>`<button class="review-step ${S.stage===s[0]?'active':''}" onclick="reviewJump('${s[0]}')"><span class="no">${String(i+1).padStart(2,'0')}</span><span>${s[1]}</span></button>`).join('')}<button class="review-step" onclick="reviewReconnect()"><span class="no">${String(REVIEW_STEPS.length+1).padStart(2,'0')}</span><span>掉线重连弹窗</span></button><button class="review-step" onclick="reviewInviteConfirm()"><span class="no">${String(REVIEW_STEPS.length+2).padStart(2,'0')}</span><span>发送邀请确认</span></button>`;
 }
 function updateReviewer(){const r=document.getElementById('reviewer');if(r)r.innerHTML=reviewerHtml()}
 function makeReviewMatch(winState=true){
@@ -353,8 +354,15 @@ function updatePkQuery(v){S.pkQuery=v;const root=document.getElementById('pkList
 function pkListContent(){
  const match='产品知识组队体验赛'.includes((S.pkQuery||'').trim());
  if(!match||['未开始','已结束'].includes(S.pkTab))return `<div class="empty-state"><div class="empty-icon"></div><b>没有符合条件的PK赛</b><span>试试切换状态看看</span></div>`;
- return `<button class="panel card event" style="width:100%;text-align:left" onclick="openEvent()"><div class="event-head"><span class="tag green">● 进行中</span><span class="tag blue">1v1 已开放</span></div><div class="event-title">产品知识 PK赛</div></button>`
+ return `<button class="panel card event" style="width:100%;text-align:left" onclick="openEvent()"><div class="event-head"><span class="tag green">● 进行中</span><span class="tag blue">1v1 已开放</span></div><div class="event-title">产品知识 PK赛</div></button>${pkRoomSection()}`
 }
+function pkRoomSection(){
+ const rooms=(S.invitedRooms||[]).filter(r=>r.owner&&r.id!==S.ownRoom?.id);
+ const head=`<div class="room-list-head"><b>PK房间</b><button class="create-room-btn" style="height:30px;padding:0 11px;border-radius:11px;font-size:10px" onclick="trans('invite')">创建房间</button></div>`;
+ return rooms.length?`${head}${rooms.map(roomInviteCard).join('')}`:`${head}<div class="embedded-room-empty">暂无其他学员发起的PK房间</div>`
+}
+function roomInviteCard(r){return `<div class="room-entry"><div class="room-entry-top"><div><div class="room-entry-title">${r.owner} 邀请你PK</div><div class="room-entry-meta">${r.created} · 房主正在等待</div></div></div><div class="room-entry-bottom"><div class="room-mini-duel"><span class="room-mini-avatar">${r.initial}</span><span class="room-mini-vs">VS</span><span class="room-mini-avatar"><img src="${ME}"></span></div><button class="join-now" onclick="tryEnterInvited('${r.id}')">立即加入</button></div></div>`}
+
 function openEvent(){trans('detail')}
 function detail(){
  html(`${spark(10)}${status()}${nav('PK赛详情')}<div class="page"><div class="cover"><span class="kicker" style="background:#43E3A318;border-color:#43E3A344;color:#7CF0C7">进行中</span><h2>产品知识<br>PK赛</h2><p>1v1 本期开放 · 进入后锁定对手</p><div class="vsmini">PK</div></div>
@@ -397,8 +405,8 @@ function hall(){
  </div>`)
 }
 function roomOwn(r){return `<div class="room-entry"><div class="room-entry-top"><div><span class="tag blue">我的房间</span><div class="room-entry-title">等待受邀学员进入</div><div class="room-entry-meta">已邀请 ${r.invites.map(i=>i.name).join('、')}</div></div><span class="tag green">等待中</span></div><div class="room-entry-bottom"><div class="room-mini-duel"><span class="room-mini-avatar"><img src="${ME}"></span><span class="room-mini-vs">VS</span>${r.invites.slice(0,2).map(i=>`<span class="room-mini-avatar">${i.img?`<img src="${i.img}">`:i.initial}</span>`).join('')}</div><div style="display:flex;gap:6px"><button class="mini-btn" style="flex:none;padding:0 10px" onclick="trans('ownWaiting')">进入</button><button class="mini-btn red" style="flex:none;padding:0 10px" onclick="deleteOwnRoom()">退出</button></div></div></div>`}
-function roomInvite(r){return `<div class="room-entry"><div class="room-entry-top"><div><span class="tag red">邀请我的房间</span><div class="room-entry-title">${r.owner} 的PK房间</div><div class="room-entry-meta">产品知识组队体验赛 · ${r.created}</div></div><span class="tag green">可加入</span></div><div class="room-entry-bottom"><div class="room-mini-duel"><span class="room-mini-avatar">${r.initial}</span><span class="room-mini-vs">VS</span><span class="room-mini-avatar"><img src="${ME}"></span></div><button class="join-now" onclick="tryEnterInvited('${r.id}')">立即加入</button></div></div>`}
-function roomOngoing(r){return `<div class="room-entry"><div class="room-entry-top"><div><span class="tag ${r.myOffline?'red':'green'}">${r.myOffline?'我已退出':'进行中'}</span><div class="room-entry-title">与 ${r.opponent} 的对局</div><div class="room-entry-meta">第 ${Math.min(r.qi+1,5)} / 5题 · ${r.myOffline?'对手仍在继续PK':'对局进行中'}</div></div><span class="tag gray">历史房间</span></div><div class="room-entry-bottom"><div class="room-mini-duel"><span class="room-mini-avatar"><img src="${ME}"></span><span class="room-mini-vs">VS</span><span class="room-mini-avatar">${r.oppImg?`<img src="${r.oppImg}">`:r.oppInitial}</span></div><button class="join-now" onclick="tryRejoin('${r.id}')">重新进入</button></div></div>`}
+function roomInvite(r){return `<div class="room-entry"><div class="room-entry-top"><div><div class="room-entry-title">${r.owner} 邀请你PK</div><div class="room-entry-meta">${r.created} · 房主正在等待</div></div></div><div class="room-entry-bottom"><div class="room-mini-duel"><span class="room-mini-avatar">${r.initial}</span><span class="room-mini-vs">VS</span><span class="room-mini-avatar"><img src="${ME}"></span></div><button class="join-now" onclick="tryEnterInvited('${r.id}')">立即加入</button></div></div>`}
+function roomOngoing(r){return `<div class="room-entry"><div class="room-entry-top"><div><div class="room-entry-title">与 ${r.opponent} 的对局</div><div class="room-entry-meta">第 ${Math.min(r.qi+1,5)} / 5题 · ${r.myOffline?'对手仍在继续PK':'对局进行中'}</div></div></div><div class="room-entry-bottom"><div class="room-mini-duel"><span class="room-mini-avatar"><img src="${ME}"></span><span class="room-mini-vs">VS</span><span class="room-mini-avatar">${r.oppImg?`<img src="${r.oppImg}">`:r.oppInitial}</span></div><button class="join-now" onclick="tryRejoin('${r.id}')">重新进入</button></div></div>`}
 function portrait(i){return i.img?`<span class="portrait"><img src="${i.img}"></span>`:`<span class="portrait">${i.initial}</span>`}
 function deleteOwnRoom(){S.ownRoom=null;toast('已退出房间');render()}
 function tryEnterInvited(id){
@@ -414,7 +422,7 @@ function invite(){
  </div></div><div class="invite-footer"><div class="invite-count">已选择 <b id="inviteCount">${S.selectedInvites.length}</b> 人</div><button id="inviteConfirmBtn" class="invite-confirm" ${S.selectedInvites.length?'':'disabled'} onclick="showInviteConfirm()">确定</button></div>`)
 }
 function contactRow(c){const sel=S.selectedInvites.includes(c.id);return `<button class="contact-row ${sel?'selected':''}" data-id="${c.id}" data-key="${c.name}${c.sub}" onclick="toggleInvite('${c.id}',this)"><span class="contact-check">${sel?'✓':''}</span>${c.img?`<span class="contact-av"><img src="${c.img}"></span>`:`<span class="contact-av">${c.initial}</span>`}<span><span class="contact-name">${c.name}</span><span class="contact-dept">${c.sub}</span></span></button>`}
-function filterContacts(v){const q=(v||'').trim();document.querySelectorAll('.contact-row').forEach(row=>row.style.display=!q||row.dataset.key.includes(q)?'grid':'none')}
+function filterContacts(v){const q=(v||'').trim().toLowerCase();document.querySelectorAll('.contact-row').forEach(row=>row.style.display=!q||row.dataset.key.toLowerCase().includes(q)?'grid':'none')}
 function toggleInvite(id,row){
  const idx=S.selectedInvites.indexOf(id);if(idx>=0)S.selectedInvites.splice(idx,1);else S.selectedInvites.push(id);
  if(row){const sel=S.selectedInvites.includes(id);row.classList.toggle('selected',sel);const ck=row.querySelector('.contact-check');if(ck)ck.textContent=sel?'✓':''}
@@ -423,7 +431,10 @@ function toggleInvite(id,row){
 function showInviteConfirm(){
  if(!S.selectedInvites.length)return;
  const people=S.selectedInvites.map(id=>candidates.find(c=>c.id===id));
- openModal(`<h3>发送PK邀请</h3><p>将向以下学员发送PK邀请。最先进入房间的学员将成为本场对手，其余邀请自动失效。</p><div class="selected-list">${people.map(p=>`<span class="chip">${p.name}</span>`).join('')}</div><button class="cta" onclick="sendInvites()">确认发送</button>`,true)
+ openModal(`<h3>发送PK邀请确认</h3><p>将向以下学员发送PK邀请。最先进入房间的学员将成为本场对手，其余邀请自动失效。</p><div class="selected-list">${people.map(p=>`<span class="chip">${p.name}</span>`).join('')}</div><button class="cta" onclick="sendInvites()">确认发送</button>`,true)
+}
+function reviewInviteConfirm(){
+ clearFlow();S.selectedInvites=['u1','u2','u3'];S.stage='invite';render();showInviteConfirm()
 }
 function sendInvites(){
  const people=S.selectedInvites.map(id=>candidates.find(c=>c.id===id));
@@ -612,7 +623,7 @@ function showPendingReconnectPrompt(){
  const m=pendingReconnect();
  if(!m||S.reconnectPrompted||S.reconnectDismissed||S.modal)return;
  S.reconnectPrompted=true;
- openModal(`<h3 style="text-align:center">提示</h3><p style="text-align:center;font-size:15px;color:#D8E3F7">您有尚未完成的MOPK正在进行，是否重新连接？</p><div class="modal-actions"><button class="modal-cancel" onclick="cancelReconnectPrompt()">取消</button><button class="modal-reconnect" onclick="tryRejoin('${m.id}')">重新连接</button></div>`,false)
+ openModal(`<h3 style="text-align:center">提示</h3><p style="text-align:center;font-size:15px;color:#D8E3F7">您有尚未完成的PK赛正在进行，是否重新连接？</p><div class="modal-actions"><button class="modal-cancel" onclick="cancelReconnectPrompt()">取消</button><button class="modal-reconnect" onclick="tryRejoin('${m.id}')">重新连接</button></div>`,false)
 }
 function cancelReconnectPrompt(){S.reconnectDismissed=true;closeModal()}
 function tryRejoin(id){
